@@ -38,6 +38,21 @@
     owner: root
     group: root
     mode: 0644
+  when: openvpn_as_system_config is not defined
+  notify:
+    - restart openvpn_as
+  tags:
+    - openvpn_as
+
+- name: Template OpenVPN Access Server main configuration
+  become: yes
+  copy:
+    content: "{% for key,value in openvpn_as_system_config.iteritems() %}{{ key }}={{ value }}\n{% endfor %}"
+    dest: /usr/local/openvpn_as/etc/as.conf
+    owner: root
+    group: root
+    mode: 0644
+  when: openvpn_as_system_config is defined
   notify:
     - restart openvpn_as
   tags:
@@ -51,6 +66,22 @@
     owner: root
     group: root
     mode: 0644
+  when: openvpn_as_config is not defined
+  notify:
+    - update db
+    - restart openvpn_as
+  tags:
+    - openvpn_as
+
+- name: Place config file from openvpn_as_config
+  become: yes
+  copy:
+    content: "{{ openvpn_as_config | to_nice_json }}"
+    dest: /usr/local/openvpn_as/etc/config.json
+    owner: root
+    group: root
+    mode: 0644
+  when: openvpn_as_config is defined
   notify:
     - update db
     - restart openvpn_as
