@@ -30,11 +30,55 @@
   tags:
     - openvpn_as
 
+- name: External PKI | Ensure pki directory is in place
+  file:
+    dest: "{{ openvpn_as_pki_directory }}"
+    state: directory
+    owner: openvpn_as
+    group: openvpn_as
+    mode: 644
+
+- name: External PKI | Place TLS Static Auth Key
+  copy:
+    dest: "{{ openvpn_as_external_pki_ta_key_filename }}"
+    mode: 644
+    content: "{{ openvpn_as_external_pki_ta_key }}"
+  when: openvpn_as_external_pki_enabled
+
+- name: External PKI | Place DHParam Key
+  copy:
+    dest: "{{ openvpn_as_external_pki_dh_key_filename }}"
+    mode: 644
+    content: "{{ openvpn_as_external_pki_dh_key }}"
+  when: openvpn_as_external_pki_enabled
+
+- name: External PKI | Place CA Certificate
+  copy:
+    dest: "{{ openvpn_as_external_pki_ca_cert_filename }}"
+    mode: 644
+    content: "{{ openvpn_as_external_pki_ca_cert }}"
+  when: openvpn_as_external_pki_enabled
+
+- name: External PKI | Place Server Key
+  copy:
+    dest: "{{ openvpn_as_external_pki_server_key_filename }}"
+    mode: 644
+    content: "{{ openvpn_as_external_pki_server_key }}"
+  when: openvpn_as_external_pki_enabled
+
+- name: External PKI | Place Server Certificate
+  copy:
+    dest: "{{ openvpn_as_external_pki_server_cert_filename }}"
+    mode: 644
+    content: "{{ openvpn_as_external_pki_server_cert }}"
+  when: openvpn_as_external_pki_enabled
+
+
 - name: Template OpenVPN Access Server main configuration
   become: yes
   template:
     src: as.conf.j2
-    dest: /usr/local/openvpn_as/etc/as.conf
+    dest: "{{ openvpn_as_etc_directory }}/as.conf"
     owner: root
     group: root
     mode: 0644
@@ -48,7 +92,7 @@
   become: yes
   copy:
     content: "{% for key,value in openvpn_as_system_config.iteritems() %}{{ key }}={{ value }}\n{% endfor %}"
-    dest: /usr/local/openvpn_as/etc/as.conf
+    dest: "{{ openvpn_as_etc_directory }}/as.conf"
     owner: root
     group: root
     mode: 0644
@@ -62,7 +106,7 @@
   become: yes
   template:
     src: config.json.j2
-    dest: /usr/local/openvpn_as/etc/config.json
+    dest: "{{ openvpn_as_etc_directory }}/config.json"
     owner: root
     group: root
     mode: 0644
@@ -77,7 +121,7 @@
   become: yes
   copy:
     content: "{{ openvpn_as_config | to_nice_json }}"
-    dest: /usr/local/openvpn_as/etc/config.json
+    dest: "{{ openvpn_as_etc_directory }}/config.json"
     owner: root
     group: root
     mode: 0644

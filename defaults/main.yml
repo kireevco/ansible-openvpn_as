@@ -8,11 +8,13 @@ openvpn_as_ubuntu_xenial_sha256sum: f00cf38d9fb51beb66ddb9d67b508952d9170b6d94e8
 
 openvpn_as_password: $6$j8B0A1aiU$53BF5A6qO74IDJWTDqgaafnBar1c.LOKK7sdBxwXJY/K/I/XUFAWNsfm78dI9YBDPTHJlmaZoE.QFg.3DEobO1
 
+openvpn_as_directory: /usr/local/openvpn_as
 openvpn_as_admin_ui_https_ip_address: "{{ ansible_default_ipv4.address }}"
 openvpn_as_admin_ui_https_port: 943
+openvpn_as_external_pki_enabled: false
 
 openvpn_as_connect: "true"
-
+openvpn_as_auth_module_type: "pam"
 openvpn_as_cs_admin_only: "false"
 openvpn_as_cs_auto_generate: "true"
 openvpn_as_cs_cws_ui_offer_android: "true"
@@ -27,6 +29,28 @@ openvpn_as_cs_https_ip_address: "{{ ansible_default_ipv4.address }}"
 openvpn_as_cs_https_port: 943
 openvpn_as_cs_ssl_reneg: "false"
 openvpn_as_cs_tls_version_min: 1.0
+
+
+openvpn_as_external_pki_cn_username_requirement: "true"
+openvpn_as_external_pki_ca_cert:
+openvpn_as_external_pki_server_cert:
+openvpn_as_external_pki_server_key:
+openvpn_as_external_pki_ta_key:
+openvpn_as_external_pki_dh_key:
+openvpn_as_external_pki_tls_static_key:
+
+openvpn_as_etc_directory: "{{ openvpn_as_directory }}/etc"
+openvpn_as_scripts_directory: "{{ openvpn_as_directory }}/scripts"
+openvpn_as_pki_directory: "{{ openvpn_as_directory }}/pki"
+
+openvpn_as_external_pki_server_cert_filename: "{{ openvpn_as_pki_directory }}/server.crt"
+openvpn_as_external_pki_server_key_filename: "{{ openvpn_as_pki_directory }}/server.key"
+openvpn_as_external_pki_ca_cert_filename: "{{ openvpn_as_pki_directory }}/ca.crt"
+openvpn_as_external_pki_ta_key_filename: "{{ openvpn_as_pki_directory }}/ta.key"
+openvpn_as_external_pki_dh_key_filename: "{{ openvpn_as_pki_directory }}/dh.key"
+openvpn_as_external_pki_autologin_x509_spec: "role,,AUTOLOGIN"
+openvpn_as_external_pki_remote_cert_usage: ns
+
 
 openvpn_as_host_name: "{{ ansible_default_ipv4.address }}"
 
@@ -78,10 +102,19 @@ openvpn_as_vpn_server_static: []
 #  - netmask_bits: 27
 #    network: 172.27.222.0
 openvpn_as_vpn_server_tls_version_min: default
-
+openvpn_as_vpn_server_tls_auth: "true"
 openvpn_as_vpn_tls_refresh_interval: 360
 
 openvpn_as_xmlrpc_relay_level: 1
+
+
+# Uncomment this is you would like to use yaml-style config
+#openvpn_as_config:
+#  Default: "{{ openvpn_as_config_default_profile | from_yaml }}"
+#  _INTERNAL:
+#    run_api.active_profile: Default
+#    webui.edit_profile: Default
+
 
 openvpn_as_config_default_profile: |
   admin_ui.https.ip_address: "{{ openvpn_as_admin_ui_https_ip_address }}"
@@ -91,7 +124,7 @@ openvpn_as_config_default_profile: |
   auth.ldap.0.ssl_verify: "never"
   auth.ldap.0.timeout: "4"
   auth.ldap.0.use_ssl: "never"
-  auth.module.type: "pam"
+  auth.module.type: "{{ openvpn_as_auth_module_type }}"
   auth.pam.0.service: "openvpnas"
   auth.radius.0.acct_enable: "false"
   auth.radius.0.name: "My Radius servers"
@@ -111,6 +144,16 @@ openvpn_as_config_default_profile: |
   cs.ssl_method: "SSLv3"
   cs.ssl_reneg: "{{ openvpn_as_cs_ssl_reneg }}"
   cs.tls_version_min: "{{ openvpn_as_cs_tls_version_min }}"
+
+  external_pki.cn_username_requirement: "{{ openvpn_as_external_pki_cn_username_requirement }}"
+  external_pki.server_crt: "{{ openvpn_as_external_pki_server_cert | regex_replace ('\n', '\\n') }}"
+  external_pki.server_key: "{{ openvpn_as_external_pki_server_key | regex_replace ('\n', '\\n') }}"
+  external_pki.ca_crt: "{{ openvpn_as_external_pki_ca_cert | regex_replace ('\n', '\\n') }}"
+  external_pki.ta_key: "{{ openvpn_as_external_pki_ta_key | regex_replace ('\n', '\\n') }}"
+  external_pki.dh_pem: "{{ openvpn_as_external_pki_dh_key | regex_replace  ('\n', '\\n') }}"
+  external_pki.autologin_x509_spec: "{{ openvpn_as_external_pki_autologin_x509_spec }}"
+  external_pki.remote_cert_usage: "{{ openvpn_as_external_pki_remote_cert_usage }}"
+
   host.name: "{{ openvpn_as_host_name }}"
   iptables.append: "{{ openvpn_as_iptables_append }}"
   iptables.vpn.disable.filter: "{{ openvpn_as_iptables_vpn_disable_filter }}"
@@ -136,7 +179,7 @@ openvpn_as_config_default_profile: |
   vpn.daemon.{{ loop.index0 }}.listen.protocol: "{{ daemon.listen_protocol }}"
   vpn.daemon.{{ loop.index0 }}.server.ip_address: "{{ daemon.server_ip_address }}"
   {% endfor %}
-
+  vpn.server.config_text: "{{ ( openvpn_as_vpn_server_config_directives | join('\n') ) }}"
   vpn.server.daemon.enable: "{{ openvpn_as_vpn_server_daemon_enable }}"
   vpn.server.daemon.tcp.n_daemons: "1"
   vpn.server.daemon.tcp.port: "{{ openvpn_as_vpn_server_daemon_tcp_port }}"
@@ -176,7 +219,7 @@ openvpn_as_config_default_profile: |
   vpn.server.static.{{ loop.index0 }}.netmask_bits: "{{ static.netmask_bits }}"
   vpn.server.static.{{ loop.index0 }}.network: "{{ static.network }}"
   {% endfor %}
-
+  vpn.server.tls_auth: "{{ openvpn_as_vpn_server_tls_auth }}"
   vpn.server.tls_version_min: "{{ openvpn_as_vpn_server_tls_version_min }}"
   vpn.tls_refresh.do_reauth: "true"
   vpn.tls_refresh.interval: "{{ openvpn_as_vpn_tls_refresh_interval }}"
@@ -184,19 +227,10 @@ openvpn_as_config_default_profile: |
 
 
 
-# Uncomment this is you would like to use yaml-style config
-#openvpn_as_config:
-#  Default: "{{ openvpn_as_config_default_profile | from_yaml }}"
-#  _INTERNAL:
-#    run_api.active_profile: Default
-#    webui.edit_profile: Default
-
-
 
 openvpn_as_system_config:
   AS_CONNECT: "true"
   #DEBUG=false
-#  {% if openvpn_as_connect %}
   AS_CONNECT: "{{ openvpn_as_connect }}"
   tmp_dir: ~/tmp
   lic.dir: ~/licenses

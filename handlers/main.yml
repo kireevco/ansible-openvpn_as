@@ -3,9 +3,9 @@
 
 - name: update db
   become: yes
-  command: ./confdba --load --file=../etc/config.json
+  command: "./confdba --load --file={{ openvpn_as_etc_directory }}/config.json"
   args:
-    chdir: /usr/local/openvpn_as/scripts
+    chdir: "{{ openvpn_as_scripts_directory }}"
   tags:
     - openvpn_as
 
